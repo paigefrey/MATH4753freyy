@@ -1,0 +1,454 @@
+---
+title: "lab4"
+author: "Paige Frey"
+date: "2/17/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Task 1
+
+```{r}
+getwd()
+```
+
+# Task 2
+
+```{r}
+spruce.df = read.csv("SPRUCE.csv")
+tail(spruce.df)
+```
+
+# Task 3
+
+## Lowess smoother scatter slot
+
+```{r}
+library(s20x)
+trendscatter(Height~BHDiameter, data = spruce.df, f = 0.5)
+```
+
+## Linear Model Object
+
+```{r}
+spruce.lm = with(spruce.df, lm(Height~BHDiameter))
+```
+
+## Residuals
+
+```{r}
+height.res = residuals(spruce.lm)
+```
+
+## Fitted Values
+
+```{r}
+height.fit = fitted(spruce.lm)
+```
+
+## Residuals vs. Fitted
+
+```{r}
+plot(y = height.res, x = height.fit)
+```
+
+## Residuals vs. Fitted using Trendscatter
+
+```{r}
+trendscatter(y = height.res, x = height.fit)
+```
+
+## Shape of the plot
+
+The plot shows a parabola-shaped curve which is more symmetrical compared to the first plot. This is because the blue line starts getting a negative slope after the peak. The first plot's slope stays positive and then approaches zero. This is a result of the differences of the x and y data, which is Height vs. BHDiameter and Resiudals vs. Fitted. We see from this that a linear model does not work well at illustrating our data, and a quadratic equation fits the curve best.
+
+## Residual Plot
+
+```{r}
+plot(spruce.lm, which = 1)
+```
+
+## Normality
+
+```{r}
+normcheck(spruce.lm, shapiro.wilk = TRUE)
+```
+
+## P-Value and Null-Hypothesis
+
+We can see that the P-value is 0.29, and since it is > 0.05, we accept the null hypothesis, that says our error is distributed normally. If the model works, then the residuals should be approximately normal in distribution with constant variance and mean 0.
+
+## Evaluating the model
+
+```{r}
+round(mean(height.res), 4)
+```
+This signifies that the mean is 0 for the residuals. 
+
+## Conclusion
+
+Given the shape of the plot of residuals, which are fitted height values, we cannot use a linear model. We see that it's quadratic, not linear. We should see "noise", not "signal". We have to adjust the model.
+
+# Task 4
+
+## Fitting a quadratic
+
+```{r}
+quad.lm = lm(Height~BHDiameter + I(BHDiameter ^ 2), data = spruce.df)
+
+summary(quad.lm)
+```
+
+## A fresh plot, adding a quadratic curve
+
+```{r}
+coef(quad.lm)
+```
+
+```{r}
+plot(spruce.df)
+
+myplot = function(x) (
+  quad.lm$coef[1] + quad.lm$coef[2] * x + quad.lm$coef[3] * x ^ 2
+)
+
+
+curve(myplot, lwd = 2, col = "steelblue", add = TRUE)
+```
+
+## Quad.fit
+
+```{r}
+quad.fit = fitted(quad.lm)
+```
+
+## Residuals vs. Fitted
+
+```{r}
+plot(quad.lm, which = 1)
+```
+
+## Normality
+
+```{r}
+normcheck(quad.lm, shapiro.wilk = TRUE)
+```
+
+## Conclusion
+
+Our P-value is 0.684 so we can accept the null hypothesis.Looking at the residuals vs. fitted values plot, there is not a noticeable trend. This is "noise" level, so the quadratic model does in fact fit the data better than the linear one.
+
+# Task 5
+
+## Summarize quad.lm
+
+```{r}
+summary(quad.lm)
+```
+
+## Beta hat values
+
+Beta hat(sub 0) - 0.860896 * Beta hat(sub 1) - 1.469592 * Beta hat (sub 2) - 0.027457
+
+## Interval Estimates
+
+```{r}
+ciReg(quad.lm)
+```
+
+## Fitted Line Equation
+
+Height = 0.860896 + 1.46959x - 0.027457x^2
+
+## Height predictions
+
+```{r}
+predict(quad.lm, data.frame(BHDiameter = c(15, 16, 20)))
+```
+
+## Comparison
+
+```{r}
+predict(spruce.lm, data.frame(BHDiameter = c(15, 10, 20)))
+```
+
+## Multiple R-Squared
+
+### quad.lm
+
+```{r}
+summary(quad.lm)$r.squared
+```
+
+R^2 = 0.7741266
+
+### spruce.lm
+
+```{r}
+summary(spruce.lm)$r.squared
+```
+
+R^2 = 0.6569146
+
+## Adjusted R-Squared
+
+```{r}
+summary(quad.lm)$adj.r.squared
+```
+
+```{r}
+summary(spruce.lm)$adj.r.squared
+```
+
+Our adjusted R-squared tells us if our data fits the model or not. R-squared goes up if the model improves and goes down if it is weakened. Quad.lm is higher than spruce.lm, so quad.lm is a better fit.
+
+## Model with the most variability
+
+```{r}
+summary(quad.lm)$r.squared
+```
+
+```{r}
+summary(quad.lm)$adj.r.squared
+```
+
+```{r}
+summary(spruce.lm)$adj.r.squared
+```
+
+The highest variability in height is explained by quad.lm. Its R-squared and adjusted R-squared values are larger than spruce.lm
+
+## Anova
+
+```{r}
+anova(spruce.lm)
+```
+
+```{r}
+anova(quad.lm)
+```
+
+```{r}
+anova(spruce.lm, quad.lm)
+```
+
+Quad.lm is a better model for the data we have. Its smaller RSS value means its a better fit than that of spruce.lm.
+
+## TSS, MSS, RSS
+
+```{r}
+height.qfit = fitted(quad.lm)
+```
+
+
+### TSS
+
+```{r}
+TSS = with(spruce.df, sum((Height - mean(Height)) ^ 2 ))
+TSS
+```
+
+### MSS
+
+```{r}
+MSS = with(spruce.df, sum((height.qfit - mean(Height)) ^ 2 ))
+MSS
+```
+
+### RSS
+
+```{r}
+RSS = with(spruce.df, sum((Height - height.qfit ^ 2)))
+```
+
+### MSS/TSS
+
+```{r}
+MSS/TSS
+```
+
+# Task 6
+
+## Cook's Plot
+
+```{r}
+library(s20x)
+cooks20x(quad.lm, main = "Cook's Distance plot for quad.lm")
+```
+
+## What is Cook's distance?
+
+Cook's distance measures how much a data point changes regression analysis if it had been deleted. The more distance (based on data's impact on fitted response values) there is, the more it impacts the regression analysis. Cook's distance determines if outliers exist and suggests which datum to get rid of if we want a new model without a big influencer. Outliers make our model less reliable so removing them might ameliorate the model. 
+
+## Cook's distance: quad.lm
+
+Cook's distance for quad.lm states that 24th datum influences the model the most. It has the tallest height on the plot.
+
+## quad2.lm
+
+```{r}
+quad2.lm = lm(Height~BHDiameter + I(BHDiameter ^ 2) , data = spruce.df[-24,])
+```
+
+## quad2.lm summary
+
+```{r}
+summary(quad2.lm)
+```
+
+## Comparison with quad.lm
+
+```{r}
+summary(quad.lm)
+```
+
+The median, max, and min residual are smaller for quad2.lm. The multiple R-squared and adjusted R-squared values for quad2.lm are larger than those of quad.lm.
+
+## Conclusion
+
+The Cook's Distance Plot indicated the significance of the 24th datum by showing that it greatly impacted the mdoel. If we remove it, our R-squared value would increase.
+
+# Task 7
+
+## Proof
+
+There are two lines in common with the point x_k in common.
+
+\begin{eqnarray}
+
+l_1: y-\beta_0+\beta_1x
+
+\end{eqnarray}
+
+\begin{eqnarray}
+l_2: y-\beta_0+\delta+(\beta_1+\beta_2)x
+\end{eqnarray}
+
+We need to plug in the point x_k and set the equations equal because they share the point.
+
+\begin{eqnarray}
+
+y_k=\beta_0+\beta_1x_k=\beta_0+\delta+(\beta_1+\beta_2)x_k
+
+\end{eqnarray}
+
+Now we distribute x_k on the right side
+
+\begin{eqnarray}
+
+\beta_0+\beta_1x_k-\beta_0+\delta+\beta_1x_k+\beta_2x_k
+
+\end{eqnarray}
+
+Beta_not and Beta_1x cancel.
+
+\begin{eqnarray}
+
+0-\delta+\beta_2x_k
+
+\end{eqnarray}
+
+Then,
+\begin{eqnarray}
+
+\delta- -\beta_1x_k
+
+\end{eqnarray}
+
+Going back to l_2 for any x
+
+\begin{eqnarray}
+
+l_2: y - \beta_0+\delta+(\delta_1+\delta_2)x
+
+\end{eqnarray}
+
+
+\begin{eqnarray}
+
+Substitute...\delta=-\beta_2x_k
+
+\end{eqnarray}
+
+\begin{eqnarray}
+
+l_2:y-\beta_0+\delta+(\beta_1+\beta_2)x
+
+\end{eqnarray}
+
+Distribute x
+
+\begin{eqnarray}
+
+l_2:y-\beta_0-\beta_2x_k+\beta_1x+\beta_2x
+
+\end{eqnarray}
+
+Rearrange
+
+\begin{eqnarray}
+
+l_2:y=\beta_0+\beta_1x+\beta_2x-\beta_2x_k
+
+\end{eqnarray}
+
+Factor out beta_2
+
+\begin{eqnarray}
+
+l_2:y-\beta_0+\beta_1x+\beta_2(x-x_k)
+
+\end{eqnarray}
+
+This formula described l_2 as an adjustment of l2
+
+An andicator function allows our function to know where to include the adjustment
+
+\begin{eqnarray}
+
+y-\beta_0+\beta_1x+\beta_2(x-x_k)I(x>x_k)
+
+\end{eqnarray}
+
+I() is 1 if x > x_k and 0 else
+
+## Reproducing plot
+
+```{r}
+sp2.df = within(spruce.df, X <- (BHDiameter - 18) * (BHDiameter > 18))
+sp2.df
+```
+
+```{r}
+lmp = lm(Height~BHDiameter + X, data = sp2.df)
+tmp = summary(lmp)
+names(tmp)
+```
+
+```{r}
+myf = function(x, coef)(coef[1] + coef[2] * (x) + coef[3] * (x - 18) * (x - 18 > 0))
+
+
+plot(spruce.df, main = "Piecewise regression")
+myf(0, coef = tmp$coefficients[,"Estimate"])
+
+curve(myf(x,coef = tmp$coefficients[,"Estimate"]),add = TRUE, lwd = 2, col = "Blue")
+abline(v = 18)
+text(18, 16, paste("R sq.-", round(tmp$r.squared,4) ))
+```
+
+
+
+
+# Task 8
+
+The function myreadxls reads in xls files. It can use a current working directly as a default path but it can also take a directory path. If the directory path is terminded with a forward slash, or isn't, the function automatically knows. It the slash is present, the function can create a full path to the excel file.
+
+
+
+
+
+
